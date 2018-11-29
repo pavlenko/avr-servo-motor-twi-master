@@ -1,5 +1,7 @@
 #include <TWI.h>
 
+#include <avr/io.h>
+
 #define COMMAND_CONTROL(_E_)             (0b00010001 & _E_) // 0b0001000E Where E is boolean enable/disable control angle get/set
 #define COMMAND_CALIBRATION_MIN_GET(_X_) (0b00100011 & _X_) // 0b00100RXX Where X is channel index, R == 0
 #define COMMAND_CALIBRATION_MIN_SET(_X_) (0b00100111 & _X_) // 0b00100WXX Where X is channel index, W == 1
@@ -25,15 +27,21 @@ int main() {
     TWI.setOnTransmitHandler(twiOnTransmit);
     TWI.setOnReceiveHandler(twiOnReceive);
 
-    //TODO read all calibration from slave
+    // Read initial calibration for each servo
     for (uint8_t i = 0; i < 4; i++) {
         TWI.start();
         TWI.writeU08((uint8_t) COMMAND_CALIBRATION_MIN_GET(i));
+        TWI.writeU08((uint8_t) COMMAND_CALIBRATION_MAX_GET(i));
         TWI.transmit(0xF0);
-        //TODO wait OR allow commands fifo buffer in slave
-        TWI.receive(0xF0, 2);
-        //TODO wait OR allow commands fifo buffer in slave
+
+        TWI.wait();
+
+        TWI.receive(0xF0, 4);
+
+        TWI.wait();
+
         min[i] = TWI.readU16();
+        max[i] = TWI.readU16();
     }
 
     while (true) {

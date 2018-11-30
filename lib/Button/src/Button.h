@@ -7,6 +7,11 @@
 #define BUTTON_DEBRIEF_ITERATIONS 10
 #endif
 
+enum ButtonMode {
+    BUTTON_MODE_PULL_DOWN,
+    BUTTON_MODE_PULL_UP,
+};
+
 class Button;
 
 typedef void (*ButtonEventHandler_t)(Button&);
@@ -16,6 +21,8 @@ private:
     volatile uint8_t *port;
     volatile uint8_t *ddr;
     uint8_t pin;
+    ButtonMode _mode;
+    uint8_t state;
 
     ButtonEventHandler_t _onPress;
     ButtonEventHandler_t _onRelease;
@@ -28,7 +35,12 @@ public:
      * @param pin
      * @param mode
      */
-    Button(volatile uint8_t *port, volatile uint8_t *ddr, uint8_t pin, uint8_t mode);
+    Button(volatile uint8_t *port, volatile uint8_t *ddr, uint8_t pin, ButtonMode mode);
+
+    /**
+     * @return
+     */
+    bool isPressed();
 
     /**
      * @param handler

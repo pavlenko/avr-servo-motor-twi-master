@@ -6,6 +6,7 @@ include(CMakeListsPrivate.txt)
 include_directories("${CMAKE_CURRENT_LIST_DIR}/.piolibdeps/ServoMotor/src")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/.piolibdeps/Timer/src")
 include_directories("${CMAKE_CURRENT_LIST_DIR}/.piolibdeps/TWI/src")
+include_directories("${CMAKE_CURRENT_LIST_DIR}/lib/Button/src")
 
 add_custom_target(
     PLATFORMIO_BUILD ALL

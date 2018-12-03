@@ -1,3 +1,4 @@
+#include <Button.h>
 #include <TWI.h>
 
 #include <avr/io.h>
@@ -21,6 +22,12 @@ void twiOnTransmit() {}
 void twiOnReceive() {}
 
 int main() {
+    // Initialize buttons
+    Button buttonU = Button(&PORTA, &DDRA, PIN0, BUTTON_MODE_PULL_UP);
+    Button buttonD = Button(&PORTA, &DDRA, PIN1, BUTTON_MODE_PULL_UP);
+    Button buttonL = Button(&PORTA, &DDRA, PIN2, BUTTON_MODE_PULL_UP);
+    Button buttonR = Button(&PORTA, &DDRA, PIN3, BUTTON_MODE_PULL_UP);
+
     // Initialize TWI
     TWI.enable();
     TWI.setFrequency(400000u);
@@ -44,7 +51,27 @@ int main() {
         max[i] = TWI.readU16();
     }
 
+    uint8_t index = 0;
+
     while (true) {
-        //TODO check buttons & send commands for update state
+        if (buttonU.isPressed()) {
+            min[index]++;
+
+            TWI.start();
+            TWI.writeU08((uint8_t) COMMAND_CALIBRATION_MIN_SET(index));//TODO handle min/max switch
+            TWI.writeU16(min[index]);
+            TWI.transmit(0xF0);
+        } else if (buttonD.isPressed()) {
+            min[index]--;
+
+            TWI.start();
+            TWI.writeU08((uint8_t) COMMAND_CALIBRATION_MIN_SET(index));//TODO handle min/max switch
+            TWI.writeU16(min[index]);
+            TWI.transmit(0xF0);
+        } else if (buttonL.isPressed()) {
+            index--;//TODO handle index circular changes
+        } else if (buttonR.isPressed()) {
+            index++;//TODO handle index circular changes
+        }
     }
 }

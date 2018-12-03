@@ -18,11 +18,10 @@ typedef void (*ButtonEventHandler_t)(Button&);
 
 class Button {
 private:
-    volatile uint8_t *port;
-    volatile uint8_t *ddr;
-    uint8_t pin;
+    volatile uint8_t *_port;
+    uint8_t _pin;
     ButtonMode _mode;
-    uint8_t state;
+    uint8_t _state;
 
     ButtonEventHandler_t _onPress;
     ButtonEventHandler_t _onRelease;

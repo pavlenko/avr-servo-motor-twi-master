@@ -23,10 +23,10 @@ void twiOnReceive() {}
 
 int main() {
     // Initialize buttons
-    Button buttonU = Button(&PORTA, &DDRA, PIN0, BUTTON_MODE_PULL_UP);
-    Button buttonD = Button(&PORTA, &DDRA, PIN1, BUTTON_MODE_PULL_UP);
-    Button buttonL = Button(&PORTA, &DDRA, PIN2, BUTTON_MODE_PULL_UP);
-    Button buttonR = Button(&PORTA, &DDRA, PIN3, BUTTON_MODE_PULL_UP);
+    Button buttonU = Button(&PORTA, PIN0, BUTTON_MODE_PULL_UP);
+    Button buttonD = Button(&PORTA, PIN1, BUTTON_MODE_PULL_UP);
+    Button buttonL = Button(&PORTA, PIN2, BUTTON_MODE_PULL_UP);
+    Button buttonR = Button(&PORTA, PIN3, BUTTON_MODE_PULL_UP);
 
     // Initialize TWI
     TWI.enable();
@@ -54,23 +54,23 @@ int main() {
     uint8_t index = 0;
 
     while (true) {
-        if (buttonU.isPressed()) {
+        if (BUTTON_STATE_PRESSED == buttonU.getState()) {
             min[index]++;
 
             TWI.start();
             TWI.writeU08((uint8_t) COMMAND_CALIBRATION_MIN_SET(index));//TODO handle min/max switch
             TWI.writeU16(min[index]);
             TWI.transmit(0xF0);
-        } else if (buttonD.isPressed()) {
+        } else if (BUTTON_STATE_PRESSED == buttonD.getState()) {
             min[index]--;
 
             TWI.start();
             TWI.writeU08((uint8_t) COMMAND_CALIBRATION_MIN_SET(index));//TODO handle min/max switch
             TWI.writeU16(min[index]);
             TWI.transmit(0xF0);
-        } else if (buttonL.isPressed()) {
+        } else if (BUTTON_STATE_PRESSED == buttonL.getState()) {
             index--;//TODO handle index circular changes
-        } else if (buttonR.isPressed()) {
+        } else if (BUTTON_STATE_PRESSED == buttonR.getState()) {
             index++;//TODO handle index circular changes
         }
     }

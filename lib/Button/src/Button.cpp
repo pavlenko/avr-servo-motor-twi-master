@@ -1,78 +1,79 @@
 #include "Button.h"
 
-#include <avr/sfr_defs.h>
+#define BUTTON_BIT_CURRENT    0
+#define BUTTON_BIT_PREVIOUS   1
+#define BUTTON_BIT_ON_PRESS   2
+#define BUTTON_BIT_ON_RELEASE 3
 
-Button::Button(volatile uint8_t *port, volatile uint8_t *ddr, uint8_t pin, ButtonMode mode) {
+#define BUTTON_BIT_READ(_byte_, _bit_)           (((_byte_) >> (_bit_)) & 0x01)
+#define BUTTON_BIT_SET(_byte_, _bit_)            ((_byte_) |= (1UL << (_bit_)))
+#define BUTTON_BIT_CLEAR(_byte_, _bit_)          ((_byte_) &= ~(1UL << (_bit_)))
+#define BUTTON_BIT_WRITE(_byte_, _bit_, _value_) (_value_ ? BUTTON_BIT_SET(_byte_, _bit_) : BUTTON_BIT_CLEAR(_byte_, _bit_))
+
+Button::Button(volatile uint8_t *port, uint8_t pin, ButtonMode mode) {
     _port = port;
     _pin  = pin;
     _mode = mode;
 
     // Set pin as input
-    *ddr &= _BV(pin);
+    BUTTON_BIT_CLEAR(*(port - 1), pin);
 
     if (BUTTON_MODE_PULL_UP == mode) {
         // Enable internal pull-up
-        *port |= _BV(pin);
+        BUTTON_BIT_SET(*port, pin);
     }
 }
 
-bool Button::isPressed() {
-    //save the previous value
+ButtonState Button::getState() {
+    // Save the previous value
     BUTTON_BIT_WRITE(_state, BUTTON_BIT_PREVIOUS, BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT));
 
-    //get the current status of the pin
-    if (BUTTON_BIT_READ(*_port, _pin) == _mode) {
-        //currently the button is not pressed
-        BUTTON_BIT_WRITE(_state, BUTTON_BIT_CURRENT, false);
-    } else {
-        //currently the button is pressed
-        BUTTON_BIT_WRITE(_state, BUTTON_BIT_CURRENT, true);
-    }
+    // Save the current state (0 == released, 1 == pressed)
+    BUTTON_BIT_WRITE(_state, BUTTON_BIT_CURRENT, BUTTON_BIT_READ(*_port, _pin) != _mode);
 
-    //handle state changes
     if (BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT) != BUTTON_BIT_READ(_state, BUTTON_BIT_PREVIOUS)) {
-        if (BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT)) {
-            //the state changed to PRESSED
-            //TODO count pressed
+        // If state changed - reset counters and return unknown state
+        _counterPressed  = 0;
+        _counterReleased = 0;
 
-            numberOfPresses++;
+        // Clear callback triggered flags
+        BUTTON_BIT_CLEAR(_state, BUTTON_BIT_ON_PRESS);
+        BUTTON_BIT_CLEAR(_state, BUTTON_BIT_ON_RELEASE);
 
-            if (_onPress) {
-                _onPress(*this);
-            }
-
-            pressedStartTime   = millis();             //start timing
-            triggeredHoldEvent = false;
-        } else {
-            //the state changed to RELEASED
-            if (_onRelease) {
-                _onRelease(*this);
-            }
-
-            if (_onClick) {
-                _onClick(*this);
-            }
-
-            //reset states (for timing and for event triggering)
-            pressedStartTime = -1;
-        }
-
-        //note that the state changed
-        BUTTON_BIT_WRITE(_state, BUTTON_BIT_CHANGED, true);
+        return BUTTON_STATE_UNKNOWN;
     } else {
-        //note that the state did not change
-        BUTTON_BIT_WRITE(_state, BUTTON_BIT_CHANGED, false);
-
-        //should we trigger a onHold event?
-        if (pressedStartTime != -1 && !triggeredHoldEvent && millis() - pressedStartTime > holdEventThreshold) {
-            if (_onHold) {
-                _onHold(*this);
-                triggeredHoldEvent = true;
+        if (BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT)) {
+            if (_counterPressed < BUTTON_DEBRIEF_ITERATIONS) {
+                // If counter less than debrief threshold - increment counter and return unknown state
+                _counterPressed++;
+                return BUTTON_STATE_UNKNOWN;
             }
+
+            return BUTTON_STATE_PRESSED;
+        } else {
+            if (_counterReleased < BUTTON_DEBRIEF_ITERATIONS) {
+                // If counter less than debrief threshold - increment counter and return unknown state
+                _counterReleased++;
+                return BUTTON_STATE_UNKNOWN;
+            }
+
+            return BUTTON_STATE_RELEASED;
         }
     }
+}
 
-    return (bool) BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT);
+void Button::dispatch() {
+    int8_t state = this->getState();
+
+    if (BUTTON_STATE_PRESSED == state && _onPress && !BUTTON_BIT_READ(_state, BUTTON_BIT_ON_PRESS)) {
+        _onPress(*this);
+        BUTTON_BIT_SET(_state, BUTTON_BIT_ON_PRESS);
+    }
+
+    if (BUTTON_STATE_RELEASED == state && _onRelease && !BUTTON_BIT_READ(_state, BUTTON_BIT_ON_RELEASE)) {
+        _onRelease(*this);
+        BUTTON_BIT_SET(_state, BUTTON_BIT_ON_RELEASE);
+    }
 }
 
 void Button::setOnPressHandler(ButtonEventHandler_t handler) {
@@ -81,12 +82,4 @@ void Button::setOnPressHandler(ButtonEventHandler_t handler) {
 
 void Button::setOnReleaseHandler(ButtonEventHandler_t handler) {
     _onRelease = handler;
-}
-
-void Button::setOnClickHandler(ButtonEventHandler_t handler) {
-    _onClick = handler;
-}
-
-void Button::setOnHoldHandler(ButtonEventHandler_t handler) {
-    _onHold = handler;
 }

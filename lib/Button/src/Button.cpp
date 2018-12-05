@@ -33,31 +33,30 @@ ButtonState Button::getState() {
     BUTTON_BIT_WRITE(_state, BUTTON_BIT_CURRENT, BUTTON_BIT_READ(*_port, _pin) != _mode);
 
     if (BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT) != BUTTON_BIT_READ(_state, BUTTON_BIT_PREVIOUS)) {
-        // If state changed - reset counters and return unknown state
-        _counterPressed  = 0;
-        _counterReleased = 0;
+        // If state changed - reset counter and return unknown state
+        _counter = 0;
 
         // Clear callback triggered flags
         BUTTON_BIT_CLEAR(_state, BUTTON_BIT_ON_PRESS);
         BUTTON_BIT_CLEAR(_state, BUTTON_BIT_ON_RELEASE);
+        BUTTON_BIT_CLEAR(_state, BUTTON_BIT_ON_HOLD);
 
         return BUTTON_STATE_UNKNOWN;
     } else {
-        if (BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT)) {
-            if (_counterPressed < sizeof(uint32_t)) {
-                _counterPressed++;
-            }
+        if (_counter < sizeof(uint32_t)) {
+            _counter++;
+        }
 
-            if (_counterPressed < BUTTON_DEBRIEF_THRESHOLD) {
-                // If counter less than debrief threshold - increment counter and return unknown state
+        if (BUTTON_BIT_READ(_state, BUTTON_BIT_CURRENT)) {
+            if (_counter < BUTTON_DEBRIEF_THRESHOLD) {
+                // If counter less than debrief threshold - return unknown state
                 return BUTTON_STATE_UNKNOWN;
             }
 
             return BUTTON_STATE_PRESSED;
         } else {
-            if (_counterReleased < BUTTON_DEBRIEF_THRESHOLD) {
-                // If counter less than debrief threshold - increment counter and return unknown state
-                _counterReleased++;
+            if (_counter < BUTTON_DEBRIEF_THRESHOLD) {
+                // If counter less than debrief threshold - return unknown state
                 return BUTTON_STATE_UNKNOWN;
             }
 
@@ -71,22 +70,23 @@ void Button::dispatch() {
 
     if (BUTTON_STATE_PRESSED == state) {
         if (_onPressHandler && !BUTTON_BIT_READ(_state, BUTTON_BIT_ON_PRESS)) {
-            _onPressHandler(*this);
-            BUTTON_BIT_SET(_state, BUTTON_BIT_ON_PRESS);
+            BUTTON_BIT_WRITE(_state, BUTTON_BIT_ON_PRESS, _onPressHandler(*this));
         }
 
-        if (_onHoldHandler && !BUTTON_BIT_READ(_state, BUTTON_BIT_ON_HOLD) && _counterPressed >= _onHoldThreshold) {
-            _onHoldHandler(*this);
-            BUTTON_BIT_SET(_state, BUTTON_BIT_ON_HOLD);
+        if (_onHoldHandler && !BUTTON_BIT_READ(_state, BUTTON_BIT_ON_HOLD) && _counter >= BUTTON_HOLD_THRESHOLD) {
+            BUTTON_BIT_WRITE(_state, BUTTON_BIT_ON_HOLD, _onHoldHandler(*this));
         }
     }
 
     if (BUTTON_STATE_RELEASED == state) {
         if (_onReleaseHandler && !BUTTON_BIT_READ(_state, BUTTON_BIT_ON_RELEASE)) {
-            _onReleaseHandler(*this);
-            BUTTON_BIT_SET(_state, BUTTON_BIT_ON_RELEASE);
+            BUTTON_BIT_WRITE(_state, BUTTON_BIT_ON_RELEASE, _onReleaseHandler(*this));
         }
     }
+}
+
+void Button::setCounter(uint32_t value) {
+    _counter = value;
 }
 
 void Button::setOnPressHandler(ButtonEventHandler_t handler) {
@@ -99,8 +99,4 @@ void Button::setOnReleaseHandler(ButtonEventHandler_t handler) {
 
 void Button::setOnHoldHandler(ButtonEventHandler_t handler) {
     _onHoldHandler = handler;
-}
-
-void Button::setOnHoldThreshold(uint32_t threshold) {
-    _onHoldThreshold = threshold;
 }

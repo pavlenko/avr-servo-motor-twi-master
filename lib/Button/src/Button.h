@@ -24,7 +24,7 @@ enum ButtonState {
 
 class Button;
 
-typedef void (*ButtonEventHandler_t)(Button &);
+typedef bool (*ButtonEventHandler_t)(Button &);
 
 class Button {
 private:
@@ -32,13 +32,11 @@ private:
     uint8_t _pin;
     ButtonMode _mode;
     uint8_t _state;
-    uint32_t _counterPressed = 0;
-    uint8_t _counterReleased = 0;
+    uint32_t _counter = 0;
 
     ButtonEventHandler_t _onPressHandler;
     ButtonEventHandler_t _onReleaseHandler;
     ButtonEventHandler_t _onHoldHandler;
-    uint32_t _onHoldThreshold = BUTTON_HOLD_THRESHOLD;
 public:
     /**
      * @param port
@@ -60,6 +58,11 @@ public:
     void dispatch();
 
     /**
+     * @param value
+     */
+    void setCounter(uint32_t value);
+
+    /**
      * @param handler
      */
     void setOnPressHandler(ButtonEventHandler_t handler);
@@ -73,11 +76,6 @@ public:
      * @param handler
      */
     void setOnHoldHandler(ButtonEventHandler_t handler);
-
-    /**
-     * @param threshold
-     */
-    void setOnHoldThreshold(uint32_t threshold);
 };
 
 #endif //BUTTON_H

@@ -1,20 +1,27 @@
+// You can override default thresholds
+#define BUTTON_DEBRIEF_THRESHOLD 100UL
+#define BUTTON_HOLD_THRESHOLD 16000000UL
+
 #include <Button.h>
 
 #include <avr/io.h>
 
-void onPressHandler(Button &button) {
+bool onPressHandler(Button &button) {
     // Do some stuff
+    return true;//<-- Return true for execute handler only once after button state changed
 }
 
-void onReleaseHandler(Button &button) {
+bool onReleaseHandler(Button &button) {
     // Do some stuff
+    return true;
 }
 
-void onHoldHandler(Button &button) {
+bool onHoldHandler(Button &button) {
     // You can set threshold for repeat call handler
-    button.setOnHoldThreshold(8000000UL);
+    button.setCounter(8000000UL);
 
     // Do some stuff
+    return true;//<-- Return true for execute handler only once after button state changed
 }
 
 int main() {

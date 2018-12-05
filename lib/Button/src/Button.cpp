@@ -2,15 +2,6 @@
 
 #include <avr/sfr_defs.h>
 
-#define BUTTON_BIT_CURRENT  0
-#define BUTTON_BIT_PREVIOUS 1
-#define BUTTON_BIT_CHANGED  2
-
-#define BUTTON_BIT_READ(_byte_, _bit_)           (((_byte_) >> (_bit_)) & 0x01)
-#define BUTTON_BIT_SET(_byte_, _bit_)            ((_byte_) |= (1UL << (_bit_)))
-#define BUTTON_BIT_CLEAR(_byte_, _bit_)          ((_byte_) &= ~(1UL << (_bit_)))
-#define BUTTON_BIT_WRITE(_byte_, _bit_, _value_) (_value_ ? BUTTON_BIT_SET(_byte_, _bit_) : BUTTON_BIT_CLEAR(_byte_, _bit_))
-
 Button::Button(volatile uint8_t *port, volatile uint8_t *ddr, uint8_t pin, ButtonMode mode) {
     _port = port;
     _pin  = pin;

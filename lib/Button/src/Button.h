@@ -3,8 +3,12 @@
 
 #include <stdint.h>
 
-#ifndef BUTTON_DEBRIEF_ITERATIONS
-#define BUTTON_DEBRIEF_ITERATIONS 10
+#ifndef BUTTON_DEBRIEF_THRESHOLD
+#define BUTTON_DEBRIEF_THRESHOLD 100UL
+#endif
+
+#ifndef BUTTON_HOLD_THRESHOLD
+#define BUTTON_HOLD_THRESHOLD 16000000UL
 #endif
 
 enum ButtonMode {
@@ -28,11 +32,13 @@ private:
     uint8_t _pin;
     ButtonMode _mode;
     uint8_t _state;
-    uint8_t _counterPressed  = 0;
+    uint32_t _counterPressed = 0;
     uint8_t _counterReleased = 0;
 
-    ButtonEventHandler_t _onPress;
-    ButtonEventHandler_t _onRelease;
+    ButtonEventHandler_t _onPressHandler;
+    ButtonEventHandler_t _onReleaseHandler;
+    ButtonEventHandler_t _onHoldHandler;
+    uint32_t _onHoldThreshold = BUTTON_HOLD_THRESHOLD;
 public:
     /**
      * @param port
@@ -62,6 +68,16 @@ public:
      * @param handler
      */
     void setOnReleaseHandler(ButtonEventHandler_t handler);
+
+    /**
+     * @param handler
+     */
+    void setOnHoldHandler(ButtonEventHandler_t handler);
+
+    /**
+     * @param threshold
+     */
+    void setOnHoldThreshold(uint32_t threshold);
 };
 
 #endif //BUTTON_H

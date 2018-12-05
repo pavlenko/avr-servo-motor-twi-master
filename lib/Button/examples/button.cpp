@@ -2,11 +2,18 @@
 
 #include <avr/io.h>
 
-void onPress(Button &button) {
+void onPressHandler(Button &button) {
     // Do some stuff
 }
 
-void onRelease(Button &button) {
+void onReleaseHandler(Button &button) {
+    // Do some stuff
+}
+
+void onHoldHandler(Button &button) {
+    // You can set threshold for repeat call handler
+    button.setOnHoldThreshold(8000000UL);
+
     // Do some stuff
 }
 
@@ -16,8 +23,9 @@ int main() {
     Button button2 = Button(&PORTA, PIN1, BUTTON_MODE_PULL_DOWN); //<-- Button connected to VCC
 
     // You can set handler callbacks for dispatch later
-    button2.setOnPressHandler(onPress);
-    button2.setOnReleaseHandler(onRelease);
+    button2.setOnPressHandler(onPressHandler);
+    button2.setOnReleaseHandler(onReleaseHandler);
+    button2.setOnHoldHandler(onHoldHandler);
 
     while (true) {
         // Now You can check button state and execute some code depends on state

@@ -22,6 +22,17 @@ void twiOnTransmit() {}
 void twiOnReceive() {}
 
 int main() {
+    PORTC = 0x00;
+    DDRC  = 0xFF;
+
+    Button btn = Button(&PORTD, PIN0, BUTTON_MODE_PULL_UP);
+
+    btn.setOnPressHandler([](Button &button){ PORTC |= _BV(PIN0); return true; });
+    btn.setOnReleaseHandler([](Button &button){ PORTC &= ~_BV(PIN0); return true; });
+    btn.setOnHoldHandler([](Button &button){ PORTC &= ~_BV(PIN0); return true; });
+
+    while (true) { btn.dispatch(); }
+
     // Initialize buttons
     Button buttonU = Button(&PORTA, PIN0, BUTTON_MODE_PULL_UP);
     Button buttonD = Button(&PORTA, PIN1, BUTTON_MODE_PULL_UP);
